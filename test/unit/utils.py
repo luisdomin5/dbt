@@ -10,7 +10,7 @@ from unittest import TestCase
 
 import agate
 import pytest
-from hologram import ValidationError
+from dbt.dataclass_schema import ValidationError
 
 
 def normalize(path):
@@ -150,7 +150,7 @@ class ContractTestCase(TestCase):
     def assert_from_dict(self, obj, dct, cls=None):
         if cls is None:
             cls = self.ContractType
-        self.assertEqual(cls.from_dict(dct),  obj)
+        self.assertEqual(cls.from_dict(dct, validate=True),  obj)
 
     def assert_symmetric(self, obj, dct, cls=None):
         self.assert_to_dict(obj, dct)
@@ -161,7 +161,7 @@ class ContractTestCase(TestCase):
             cls = self.ContractType
 
         with self.assertRaises(ValidationError):
-            cls.from_dict(dct)
+            cls.from_dict(dct, validate=True)
 
 
 def assert_to_dict(obj, dct):
@@ -171,7 +171,7 @@ def assert_to_dict(obj, dct):
 def assert_from_dict(obj, dct, cls=None):
     if cls is None:
         cls = obj.__class__
-    assert cls.from_dict(dct) == obj
+    assert cls.from_dict(dct, validate=True) == obj
 
 
 def assert_symmetric(obj, dct, cls=None):
@@ -181,7 +181,7 @@ def assert_symmetric(obj, dct, cls=None):
 
 def assert_fails_validation(dct, cls):
     with pytest.raises(ValidationError):
-        cls.from_dict(dct)
+        cls.from_dict(dct, validate=True)
 
 
 def generate_name_macros(package):

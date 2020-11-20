@@ -44,7 +44,7 @@ from dbt.contracts.graph.unparsed import (
 )
 from dbt import flags
 
-from hologram import ValidationError
+from dbt.dataclass_schema import ValidationError
 from .utils import ContractTestCase, assert_symmetric, assert_from_dict, assert_fails_validation, dict_replace, replace_config
 
 

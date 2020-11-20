@@ -13,8 +13,8 @@ from typing import (
     TypeVar,
 )
 
-from hologram import JsonSchemaMixin
-from hologram.helpers import ExtensibleJsonSchemaMixin
+from dbt.dataclass_schema import JsonSchemaMixin
+from dbt.dataclass_schema.helpers import ExtensibleJsonSchemaMixin
 
 from dbt.clients.system import write_file
 from dbt.contracts.files import FileHash, MAXIMUM_SEED_SIZE_NAME

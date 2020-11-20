@@ -4,7 +4,7 @@ import inspect
 import json
 from dataclasses import dataclass
 from typing import List, Optional, Iterable, Union, Dict, Any
-from hologram import JsonSchemaMixin
+from dbt.dataclass_schema import JsonSchemaMixin
 
 
 from dbt.context.base import BaseContext

@@ -1,8 +1,8 @@
 import logbook
 import logbook.queues
 from jsonrpc.exceptions import JSONRPCError
-from hologram import JsonSchemaMixin
-from hologram.helpers import StrEnum
+from dbt.dataclass_schema import JsonSchemaMixin
+from dbt.dataclass_schema.helpers import StrEnum
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta

@@ -13,7 +13,7 @@ from typing import Optional, List, ContextManager, Callable, Dict, Any, Set
 
 import colorama
 import logbook
-from hologram import JsonSchemaMixin
+from dbt.dataclass_schema import JsonSchemaMixin
 
 # Colorama needs some help on windows because we're using logger.info
 # intead of print(). If the Windows env doesn't have a TERM var set,

@@ -539,7 +539,7 @@ def fqn_search(
         level_config = root.get(level, None)
         if not isinstance(level_config, dict):
             break
-        yield copy.deepcopy(level_config)
+        yield level_config
         root = level_config
 
 

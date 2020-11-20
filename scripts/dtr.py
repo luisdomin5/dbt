@@ -7,10 +7,11 @@ import subprocess
 import sys
 
 # Python version defaults to 3.6
-# To run postgres integration tests: `dtr.py -i --pg` (this is the default)
-# To run postgres integration tests, clearing `dbt.log` beforehand: `dtr.py -il --pg`
-# To run postgres + redshift integration tests: `dtr.py -i --pg --rs`
-# To drop to pdb on failure, add `--pdb`
+# To run postgres integration tests: `dtr.py -i -t pg` (this is the default)
+# To run postgres integration tests, clearing `dbt.log` beforehand: `dtr.py -il -t pg`
+# dtr.py -i -t pg -a test/integration/029_docs_generate_tests
+# To run postgres + redshift integration tests: `dtr.py -i  -t pg -t rs`
+# To drop to pdb on failure, add `--pdb` or `-p`
 # To run mypy tests: `dtr.py -m`.
 # To run flake8 test: `dtr.py -f`.
 # To run unit tests: `dtr.py -u`
@@ -87,7 +88,7 @@ def parse_args(argv):
     parser.add_argument(
         '-t', '--types',
         default=None,
-        help='The types of tests to run, if this is an integration run, as csv'
+        help='The types of tests to run, if this is an integration run'
     )
     parser.add_argument(
         '-c', '--continue',

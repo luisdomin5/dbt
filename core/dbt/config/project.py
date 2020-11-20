@@ -33,7 +33,7 @@ from dbt.contracts.project import (
 )
 from dbt.contracts.project import PackageConfig
 
-from hologram import ValidationError
+from dbt.dataclass_schema import ValidationError
 
 from .renderer import DbtProjectYamlRenderer
 from .selectors import (
@@ -101,7 +101,7 @@ def package_config_from_data(packages_data: Dict[str, Any]):
         packages_data = {'packages': []}
 
     try:
-        packages = PackageConfig.from_dict(packages_data)
+        packages = PackageConfig.from_dict(packages_data, validate=True)
     except ValidationError as e:
         raise DbtProjectError(
             MALFORMED_PACKAGE_ERROR.format(error=str(e.message))
@@ -306,7 +306,9 @@ class PartialProject(RenderComponents):
         )
 
         try:
-            cfg = ProjectContract.from_dict(rendered.project_dict)
+            cfg = ProjectContract.from_dict(
+                rendered.project_dict, validate=True
+            )
         except ValidationError as e:
             raise DbtProjectError(validator_error_message(e)) from e
         # name/version are required in the Project definition, so we can assume
@@ -586,7 +588,7 @@ class Project:
 
     def validate(self):
         try:
-            ProjectContract.from_dict(self.to_project_config())
+            ProjectContract.from_dict(self.to_project_config(), validate=True)
         except ValidationError as e:
             raise DbtProjectError(validator_error_message(e)) from e
 

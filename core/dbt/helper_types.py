@@ -4,10 +4,10 @@ from datetime import timedelta
 from pathlib import Path
 from typing import NewType, Tuple, AbstractSet
 
-from hologram import (
+from dbt.dataclass_schema import (
     FieldEncoder, JsonSchemaMixin, JsonDict, ValidationError
 )
-from hologram.helpers import StrEnum
+from dbt.dataclass_schema.helpers import StrEnum
 
 Port = NewType('Port', int)
 

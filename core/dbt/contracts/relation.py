@@ -5,8 +5,8 @@ from typing import (
 )
 from typing_extensions import Protocol
 
-from hologram import JsonSchemaMixin
-from hologram.helpers import StrEnum
+from dbt.dataclass_schema import JsonSchemaMixin
+from dbt.dataclass_schema.helpers import StrEnum
 
 from dbt import deprecations
 from dbt.contracts.util import Replaceable

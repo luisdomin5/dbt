@@ -428,8 +428,85 @@ def _update_into(dest: MutableMapping[str, T], new_item: T):
     dest[unique_id] = new_item
 
 
+# This contains macro methods that are in both the Manifest
+# and the MacroManifest
+class MacroMethods:
+    # Just to make mypy happy. There must be a better way.
+    def __init__(self):
+        self.macros = []
+        self.metadata = {}
+
+    def find_macro_by_name(
+        self, name: str, root_project_name: str, package: Optional[str]
+    ) -> Optional[ParsedMacro]:
+        """Find a macro in the graph by its name and package name, or None for
+        any package. The root project name is used to determine priority:
+         - locally defined macros come first
+         - then imported macros
+         - then macros defined in the root project
+        """
+        filter: Optional[Callable[[MacroCandidate], bool]] = None
+        if package is not None:
+            def filter(candidate: MacroCandidate) -> bool:
+                return package == candidate.macro.package_name
+
+        candidates: CandidateList = self._find_macros_by_name(
+            name=name,
+            root_project_name=root_project_name,
+            filter=filter,
+        )
+
+        return candidates.last()
+
+    def find_generate_macro_by_name(
+        self, component: str, root_project_name: str
+    ) -> Optional[ParsedMacro]:
+        """
+        The `generate_X_name` macros are similar to regular ones, but ignore
+        imported packages.
+            - if there is a `generate_{component}_name` macro in the root
+              project, return it
+            - return the `generate_{component}_name` macro from the 'dbt'
+              internal project
+        """
+        def filter(candidate: MacroCandidate) -> bool:
+            return candidate.locality != Locality.Imported
+
+        candidates: CandidateList = self._find_macros_by_name(
+            name=f'generate_{component}_name',
+            root_project_name=root_project_name,
+            # filter out imported packages
+            filter=filter,
+        )
+        return candidates.last()
+
+    def _find_macros_by_name(
+        self,
+        name: str,
+        root_project_name: str,
+        filter: Optional[Callable[[MacroCandidate], bool]] = None
+    ) -> CandidateList:
+        """Find macros by their name.
+        """
+        # avoid an import cycle
+        from dbt.adapters.factory import get_adapter_package_names
+        candidates: CandidateList = CandidateList()
+        packages = set(get_adapter_package_names(self.metadata.adapter_type))
+        for unique_id, macro in self.macros.items():
+            if macro.name != name:
+                continue
+            candidate = MacroCandidate(
+                locality=_get_locality(macro, root_project_name, packages),
+                macro=macro,
+            )
+            if filter is None or filter(candidate):
+                candidates.append(candidate)
+
+        return candidates
+
+
 @dataclass
-class Manifest:
+class Manifest(MacroMethods):
     """The manifest for the full graph, after parsing and during compilation.
     """
     # These attributes are both positional and by keyword. If an attribute
@@ -449,27 +526,6 @@ class Manifest:
     _sources_cache: Optional[SourceCache] = None
     _refs_cache: Optional[RefableCache] = None
     _lock: Lock = field(default_factory=flags.MP_CONTEXT.Lock)
-
-    @classmethod
-    def from_macros(
-        cls,
-        macros: Optional[MutableMapping[str, ParsedMacro]] = None,
-        files: Optional[MutableMapping[str, SourceFile]] = None,
-    ) -> 'Manifest':
-        if macros is None:
-            macros = {}
-        if files is None:
-            files = {}
-        return cls(
-            nodes={},
-            sources={},
-            macros=macros,
-            docs={},
-            exposures={},
-            selectors={},
-            disabled=[],
-            files=files,
-        )
 
     def sync_update_node(
         self, new_node: NonSourceCompiledNode
@@ -536,30 +592,6 @@ class Manifest:
             assert isinstance(result, ParsedSourceDefinition)
         return result
 
-    def _find_macros_by_name(
-        self,
-        name: str,
-        root_project_name: str,
-        filter: Optional[Callable[[MacroCandidate], bool]] = None
-    ) -> CandidateList:
-        """Find macros by their name.
-        """
-        # avoid an import cycle
-        from dbt.adapters.factory import get_adapter_package_names
-        candidates: CandidateList = CandidateList()
-        packages = set(get_adapter_package_names(self.metadata.adapter_type))
-        for unique_id, macro in self.macros.items():
-            if macro.name != name:
-                continue
-            candidate = MacroCandidate(
-                locality=_get_locality(macro, root_project_name, packages),
-                macro=macro,
-            )
-            if filter is None or filter(candidate):
-                candidates.append(candidate)
-
-        return candidates
-
     def _materialization_candidates_for(
         self, project_name: str,
         materialization_name: str,
@@ -580,50 +612,6 @@ class Manifest:
             MaterializationCandidate.from_macro(m, specificity)
             for m in self._find_macros_by_name(full_name, project_name)
         )
-
-    def find_macro_by_name(
-        self, name: str, root_project_name: str, package: Optional[str]
-    ) -> Optional[ParsedMacro]:
-        """Find a macro in the graph by its name and package name, or None for
-        any package. The root project name is used to determine priority:
-         - locally defined macros come first
-         - then imported macros
-         - then macros defined in the root project
-        """
-        filter: Optional[Callable[[MacroCandidate], bool]] = None
-        if package is not None:
-            def filter(candidate: MacroCandidate) -> bool:
-                return package == candidate.macro.package_name
-
-        candidates: CandidateList = self._find_macros_by_name(
-            name=name,
-            root_project_name=root_project_name,
-            filter=filter,
-        )
-
-        return candidates.last()
-
-    def find_generate_macro_by_name(
-        self, component: str, root_project_name: str
-    ) -> Optional[ParsedMacro]:
-        """
-        The `generate_X_name` macros are similar to regular ones, but ignore
-        imported packages.
-            - if there is a `generate_{component}_name` macro in the root
-              project, return it
-            - return the `generate_{component}_name` macro from the 'dbt'
-              internal project
-        """
-        def filter(candidate: MacroCandidate) -> bool:
-            return candidate.locality != Locality.Imported
-
-        candidates: CandidateList = self._find_macros_by_name(
-            name=f'generate_{component}_name',
-            root_project_name=root_project_name,
-            # filter out imported packages
-            filter=filter,
-        )
-        return candidates.last()
 
     def find_materialization_macro_by_name(
         self, project_name: str, materialization_name: str, adapter_type: str
@@ -942,6 +930,19 @@ class Manifest:
             self._refs_cache,
         )
         return self.__class__, args
+
+
+class MacroManifest(MacroMethods):
+    def __init__(self, macros, files):
+        self.macros = macros
+        self.files = files
+        self.metadata = ManifestMetadata()
+        # Something is acessing the flat_graph in the macro_manifest.
+        # Remove this if that code is located and fixed.
+        self.flat_graph = {}
+
+
+AnyManifest = Union[Manifest, MacroManifest]
 
 
 @dataclass

@@ -5,9 +5,11 @@ from dbt.logger import GLOBAL_LOGGER as logger  # noqa
 from dbt import tracking
 from dbt import ui
 
-from hologram import JsonSchemaMixin, ValidationError
-from hologram.helpers import HyphenatedJsonSchemaMixin, register_pattern, \
+from dbt.dataclass_schema import JsonSchemaMixin, ValidationError
+from dbt.dataclass_schema.helpers import (
+    HyphenatedJsonSchemaMixin, register_pattern,
     ExtensibleJsonSchemaMixin
+)
 
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Union, Any, NewType

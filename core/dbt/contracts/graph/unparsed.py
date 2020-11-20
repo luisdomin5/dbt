@@ -8,8 +8,8 @@ from dbt.contracts.util import (
 import dbt.helper_types  # noqa:F401
 from dbt.exceptions import CompilationException
 
-from hologram import JsonSchemaMixin
-from hologram.helpers import StrEnum, ExtensibleJsonSchemaMixin
+from dbt.dataclass_schema import JsonSchemaMixin
+from dbt.dataclass_schema.helpers import StrEnum, ExtensibleJsonSchemaMixin
 
 from dataclasses import dataclass, field
 from datetime import timedelta

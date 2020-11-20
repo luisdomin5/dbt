@@ -9,7 +9,7 @@ from typing import (
 )
 from typing_extensions import Protocol
 
-from hologram import JsonSchemaMixin, ValidationError
+from dbt.dataclass_schema import JsonSchemaMixin, ValidationError
 
 import dbt.exceptions
 import dbt.flags
@@ -453,7 +453,7 @@ class RequestTaskHandler(threading.Thread, TaskHandlerProtocol):
             )
 
         try:
-            return cls.from_dict(self.task_kwargs)
+            return cls.from_dict(self.task_kwargs, validate=True)
         except ValidationError as exc:
             # raise a TypeError to indicate invalid parameters so we get a nice
             # error from our json-rpc library

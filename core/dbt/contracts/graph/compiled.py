@@ -19,7 +19,7 @@ from dbt.contracts.graph.parsed import (
 from dbt.node_types import NodeType
 from dbt.contracts.util import Replaceable
 
-from hologram import JsonSchemaMixin
+from dbt.dataclass_schema import JsonSchemaMixin
 from dataclasses import dataclass, field
 from typing import Optional, List, Union, Dict, Type
 

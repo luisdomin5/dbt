@@ -6,8 +6,8 @@ from typing import (
 )
 from typing_extensions import Protocol
 
-from hologram import JsonSchemaMixin
-from hologram.helpers import (
+from dbt.dataclass_schema import JsonSchemaMixin
+from dbt.dataclass_schema.helpers import (
     StrEnum, register_pattern, ExtensibleJsonSchemaMixin
 )
 
@@ -150,7 +150,7 @@ class Credentials(
     @classmethod
     def from_dict(cls, data):
         data = cls.translate_aliases(data)
-        return super().from_dict(data)
+        return super().from_dict(data, validate=True)
 
     @classmethod
     def translate_aliases(

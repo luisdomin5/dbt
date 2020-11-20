@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass, field
 from typing import List, Optional, Union
 
-from hologram import JsonSchemaMixin
+from dbt.dataclass_schema import JsonSchemaMixin
 
 from dbt.exceptions import InternalException
 

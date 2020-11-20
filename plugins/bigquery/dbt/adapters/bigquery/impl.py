@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Any, Set, Union
-from hologram import JsonSchemaMixin, ValidationError
+from dbt.dataclass_schema import JsonSchemaMixin, ValidationError
 
 import dbt.deprecations
 import dbt.exceptions
@@ -69,7 +69,7 @@ class PartitionConfig(JsonSchemaMixin):
         if raw_partition_by is None:
             return None
         try:
-            return cls.from_dict(raw_partition_by)
+            return cls.from_dict(raw_partition_by, validate=True)
         except ValidationError as exc:
             msg = dbt.exceptions.validator_error_message(exc)
             dbt.exceptions.raise_compiler_error(
@@ -798,7 +798,7 @@ class BigQueryAdapter(BaseAdapter):
         conn = self.connections.get_thread_connection()
         client = conn.handle
 
-        grant_target = GrantTarget.from_dict(grant_target_dict)
+        grant_target = GrantTarget.from_dict(grant_target_dict, validate=True)
         dataset = client.get_dataset(
             self.connections.dataset_from_id(grant_target.render())
         )

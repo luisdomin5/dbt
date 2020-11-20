@@ -1,7 +1,7 @@
 import os
 from typing import List
 
-from hologram import ValidationError
+from dbt.dataclass_schema import ValidationError
 
 from dbt.contracts.graph.parsed import (
     IntermediateSnapshotNode, ParsedSnapshotNode

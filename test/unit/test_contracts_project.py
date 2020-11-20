@@ -1,6 +1,6 @@
 from .utils import ContractTestCase
 
-from hologram import ValidationError
+from dbt.dataclass_schema import ValidationError
 
 from dbt.contracts.project import Project
 

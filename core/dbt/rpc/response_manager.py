@@ -1,7 +1,7 @@
 import json
 from typing import Callable, Dict, Any
 
-from hologram import JsonSchemaMixin
+from dbt.dataclass_schema import JsonSchemaMixin
 from jsonrpc.exceptions import (
     JSONRPCParseError,
     JSONRPCInvalidRequestException,

@@ -1,8 +1,9 @@
 from pathlib import Path
 from typing import Dict, Any
-import yaml
-
-from hologram import ValidationError
+from dbt.clients.yaml_helper import (  # noqa: F401
+    yaml, Loader, Dumper, load_yaml_text
+)
+from dbt.dataclass_schema import ValidationError
 
 from .renderer import SelectorRenderer
 
@@ -11,7 +12,6 @@ from dbt.clients.system import (
     path_exists,
     resolve_path_from_base,
 )
-from dbt.clients.yaml_helper import load_yaml_text
 from dbt.contracts.selection import SelectorFile
 from dbt.exceptions import DbtSelectorsError, RuntimeException
 from dbt.graph import parse_from_selectors_definition, SelectionSpec

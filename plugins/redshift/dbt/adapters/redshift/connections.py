@@ -10,8 +10,8 @@ import dbt.flags
 
 import boto3
 
-from hologram import FieldEncoder, JsonSchemaMixin
-from hologram.helpers import StrEnum
+from dbt.dataclass_schema import FieldEncoder, JsonSchemaMixin
+from dbt.dataclass_schema.helpers import StrEnum
 
 from dataclasses import dataclass, field
 from typing import Optional, List

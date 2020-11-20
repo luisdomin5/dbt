@@ -6,9 +6,9 @@ from typing import (
     Iterable, Dict, Any, Union, List, Optional, Generic, TypeVar, Type
 )
 
-from hologram import ValidationError, JsonSchemaMixin
+from dbt.dataclass_schema import ValidationError, JsonSchemaMixin
 
-from dbt.adapters.factory import get_adapter
+from dbt.adapters.factory import get_adapter, get_adapter_package_names
 from dbt.clients.jinja import get_rendered, add_rendered_test_kwargs
 from dbt.clients.yaml_helper import load_yaml_text
 from dbt.config.renderer import SchemaYamlRenderer
@@ -20,7 +20,10 @@ from dbt.context.context_config import (
 )
 from dbt.context.configured import generate_schema_yml
 from dbt.context.target import generate_target_context
-from dbt.context.providers import generate_parse_exposure
+from dbt.context.providers import (
+    generate_parse_exposure, generate_test_context
+)
+from dbt.context.macro_resolver import MacroResolver
 from dbt.contracts.files import FileHash
 from dbt.contracts.graph.manifest import SourceFile
 from dbt.contracts.graph.model_config import SourceConfig
@@ -172,6 +175,15 @@ class SchemaParser(SimpleParser[SchemaTestBlock, ParsedSchemaTestNode]):
 
         self.raw_renderer = SchemaYamlRenderer(ctx)
 
+        internal_package_names = get_adapter_package_names(
+            self.root_project.credentials.type
+        )
+        self.macro_resolver = MacroResolver(
+            self.macro_manifest.macros,
+            self.root_project.project_name,
+            internal_package_names
+        )
+
     @classmethod
     def get_compiled_path(cls, block: FileBlock) -> str:
         # should this raise an error?
@@ -203,7 +215,7 @@ class SchemaParser(SimpleParser[SchemaTestBlock, ParsedSchemaTestNode]):
     def parse_from_dict(self, dct, validate=True) -> ParsedSchemaTestNode:
         return ParsedSchemaTestNode.from_dict(dct, validate=validate)
 
-    def _parse_format_version(
+    def _check_format_version(
         self, yaml: YamlBlock
     ) -> None:
         path = yaml.path.relative_path
@@ -373,7 +385,8 @@ class SchemaParser(SimpleParser[SchemaTestBlock, ParsedSchemaTestNode]):
             'checksum': FileHash.empty().to_dict(),
         }
         try:
-            return self.parse_from_dict(dct)
+            ParsedSchemaTestNode.validate(dct)
+            return ParsedSchemaTestNode.from_dict(dct)
         except ValidationError as exc:
             msg = validator_error_message(exc)
             # this is a bit silly, but build an UnparsedNode just for error
@@ -386,6 +399,7 @@ class SchemaParser(SimpleParser[SchemaTestBlock, ParsedSchemaTestNode]):
             )
             raise CompilationException(msg, node=node) from exc
 
+    # lots of time spent in this method
     def _parse_generic_test(
         self,
         target: Testable,
@@ -424,6 +438,7 @@ class SchemaParser(SimpleParser[SchemaTestBlock, ParsedSchemaTestNode]):
         # is not necessarily this package's name
         fqn = self.get_fqn(fqn_path, builder.fqn_name)
 
+        # this is the config that is used in render_update
         config = self.initial_config(fqn)
 
         metadata = {
@@ -446,8 +461,54 @@ class SchemaParser(SimpleParser[SchemaTestBlock, ParsedSchemaTestNode]):
             column_name=column_name,
             test_metadata=metadata,
         )
-        self.render_update(node, config)
+        # This is what causes all of the TestConfig from_dicts
+        # lots of time spent here.
+        # this is ConfiguredParser.render_update
+        # This goes through jinja rendering but throws away the
+        # rendered template. The point here is the side effects of
+        # the 'render_update' which update various macro-related
+        # things in the nodes. Have not identified where that
+        # actually comes from yet. Will flatten out all the
+        # methods to see if I can figure it out.
+        self.render_test_update(node, config, builder)
+
         return node
+
+    def render_test_update(self, node, config, builder):
+        macro_unique_id = self.macro_resolver.get_macro_id(
+            node.package_name, 'test_' + builder.name)
+        # Add the depends_on here so we can limit the macros added
+        # to the context in rendering processing
+        node.depends_on.add_macro(macro_unique_id)
+        if (macro_unique_id in
+                ['macro.dbt.test_not_null', 'macro.dbt.test_unique']):
+            self.update_parsed_node(node, config)
+            node.unrendered_config['severity'] = builder.severity()
+            node.config['severity'] = builder.severity()
+            # source node tests are processed at patch_source time
+            if isinstance(builder.target, UnpatchedSourceDefinition):
+                sources = [builder.target.fqn[-2], builder.target.fqn[-1]]
+                node.sources.append(sources)
+            else:  # all other nodes
+                node.refs.append([builder.target.name])
+        else:
+            try:
+                # make a base context that doesn't have the magic kwargs field
+                context = generate_test_context(
+                    node, self.root_project, self.macro_manifest, config,
+                    self.macro_resolver,
+                )
+                # update with rendered test kwargs (which collects any refs)
+                add_rendered_test_kwargs(context, node, capture_macros=True)
+                # the parsed node is not rendered in the native context.
+                get_rendered(
+                    node.raw_sql, context, node, capture_macros=True
+                )
+                self.update_parsed_node(node, config)
+            except ValidationError as exc:
+                # we got a ValidationError - probably bad types in config()
+                msg = validator_error_message(exc)
+                raise CompilationException(msg, node=node) from exc
 
     def parse_source_test(
         self,
@@ -560,10 +621,13 @@ class SchemaParser(SimpleParser[SchemaTestBlock, ParsedSchemaTestNode]):
 
     def parse_file(self, block: FileBlock) -> None:
         dct = self._yaml_from_file(block.file)
-        # mark the file as seen, even if there are no macros in it
+
+        # mark the file as seen, in ParseResult.files
         self.results.get_file(block.file)
+
         if dct:
             try:
+                # This does a deep_map to check for circular references
                 dct = self.raw_renderer.render_data(dct)
             except CompilationException as exc:
                 raise CompilationException(
@@ -571,24 +635,57 @@ class SchemaParser(SimpleParser[SchemaTestBlock, ParsedSchemaTestNode]):
                     f'project {self.project.project_name}: {exc}'
                 ) from exc
 
+            # contains the FileBlock and the data (dictionary)
             yaml_block = YamlBlock.from_file_block(block, dct)
 
-            self._parse_format_version(yaml_block)
+            # checks version
+            self._check_format_version(yaml_block)
 
             parser: YamlDocsReader
-            for key in NodeType.documentable():
-                plural = key.pluralize()
-                if key == NodeType.Source:
-                    parser = SourceParser(self, yaml_block, plural)
-                elif key == NodeType.Macro:
-                    parser = MacroPatchParser(self, yaml_block, plural)
-                elif key == NodeType.Analysis:
-                    parser = AnalysisPatchParser(self, yaml_block, plural)
-                else:
-                    parser = TestablePatchParser(self, yaml_block, plural)
+
+            # There are 6 kinds of parsers:
+            # Model, Seed, Snapshot, Source, Macro, Analysis,
+
+            # NonSourceParser.parse(), TestablePatchParser is a variety of
+            # NodePatchParser
+            if 'models' in dct:
+                parser = TestablePatchParser(self, yaml_block, 'models')
                 for test_block in parser.parse():
                     self.parse_tests(test_block)
-            self.parse_exposures(yaml_block)
+
+            # NonSourceParser.parse()
+            if 'seeds' in dct:
+                parser = TestablePatchParser(self, yaml_block, 'seeds')
+                for test_block in parser.parse():
+                    self.parse_tests(test_block)
+
+            # NonSourceParser.parse()
+            if 'snapshots' in dct:
+                parser = TestablePatchParser(self, yaml_block, 'snapshots')
+                for test_block in parser.parse():
+                    self.parse_tests(test_block)
+
+            # This parser uses SourceParser.parse() which doesn't return
+            # any test blocks
+            if 'sources' in dct:
+                parser = SourceParser(self, yaml_block, 'sources')
+                parser.parse()
+
+            # NonSourceParser.parse()
+            if 'macros' in dct:
+                parser = MacroPatchParser(self, yaml_block, 'macros')
+                for test_block in parser.parse():
+                    self.parse_tests(test_block)
+
+            # NonSourceParser.parse()
+            if 'analyses' in dct:
+                parser = AnalysisPatchParser(self, yaml_block, 'analyses')
+                for test_block in parser.parse():
+                    self.parse_tests(test_block)
+
+            # parse exposures
+            if 'exposures' in dct:
+                self.parse_exposures(yaml_block)
 
 
 Parsed = TypeVar(
@@ -605,11 +702,13 @@ NonSourceTarget = TypeVar(
 )
 
 
+# abstract base class (ABCMeta)
 class YamlReader(metaclass=ABCMeta):
     def __init__(
         self, schema_parser: SchemaParser, yaml: YamlBlock, key: str
     ) -> None:
         self.schema_parser = schema_parser
+        # key: models, seeds, snapshots, sources, macros, analyses
         self.key = key
         self.yaml = yaml
 
@@ -629,6 +728,9 @@ class YamlReader(metaclass=ABCMeta):
     def root_project(self):
         return self.schema_parser.root_project
 
+    # for the different schema subparsers ('models', 'source', etc)
+    # get the list of dicts pointed to by the key in the yaml config,
+    # ensure that the dicts have string keys
     def get_key_dicts(self) -> Iterable[Dict[str, Any]]:
         data = self.yaml.data.get(self.key, [])
         if not isinstance(data, list):
@@ -638,7 +740,10 @@ class YamlReader(metaclass=ABCMeta):
             )
         path = self.yaml.path.original_file_path
 
+        # for each dict in the data (which is a list of dicts)
         for entry in data:
+            # check that entry is a dict and that all dict values
+            # are strings
             if coerce_dict_str(entry) is not None:
                 yield entry
             else:
@@ -661,12 +766,14 @@ class SourceParser(YamlDocsReader):
     def _target_from_dict(self, cls: Type[T], data: Dict[str, Any]) -> T:
         path = self.yaml.path.original_file_path
         try:
-            return cls.from_dict(data)
+            return cls.from_dict(data, validate=True)
         except (ValidationError, JSONValidationException) as exc:
             msg = error_context(path, self.key, data, exc)
             raise CompilationException(msg) from exc
 
+    # the other parse method returns TestBlocks. This one doesn't.
     def parse(self) -> List[TestBlock]:
+        # get a verified list of dicts for the key handled by this parser
         for data in self.get_key_dicts():
             data = self.project.credentials.translate_aliases(
                 data, recurse=True
@@ -709,10 +816,12 @@ class SourceParser(YamlDocsReader):
             self.results.add_source(self.yaml.file, result)
 
 
+# This class has three main subclasses: TestablePatchParser (models,
+# seeds, snapshots), MacroPatchParser, and AnalysisPatchParser
 class NonSourceParser(YamlDocsReader, Generic[NonSourceTarget, Parsed]):
     @abstractmethod
     def _target_type(self) -> Type[NonSourceTarget]:
-        raise NotImplementedError('_unsafe_from_dict not implemented')
+        raise NotImplementedError('_target_type not implemented')
 
     @abstractmethod
     def get_block(self, node: NonSourceTarget) -> TargetBlock:
@@ -727,33 +836,54 @@ class NonSourceParser(YamlDocsReader, Generic[NonSourceTarget, Parsed]):
     def parse(self) -> List[TestBlock]:
         node: NonSourceTarget
         test_blocks: List[TestBlock] = []
+        # get list of 'node' objects
+        # UnparsedNodeUpdate (TestablePatchParser, models, seeds, snapshots)
+        #      = HasColumnTests, HasTests
+        # UnparsedAnalysisUpdate (UnparsedAnalysisParser, analyses)
+        #      = HasColumnDocs, HasDocs
+        # UnparsedMacroUpdate (MacroPatchParser, 'macros')
+        #      = HasDocs
+        # correspond to this parser's 'key'
         for node in self.get_unparsed_target():
+            # node_block is a TargetBlock (Macro or Analysis)
+            # or a TestBlock (all of the others)
             node_block = self.get_block(node)
             if isinstance(node_block, TestBlock):
+                # TestablePatchParser = models, seeds, snapshots
                 test_blocks.append(node_block)
             if isinstance(node, (HasColumnDocs, HasColumnTests)):
+                # UnparsedNodeUpdate and UnparsedAnalysisUpdate
                 refs: ParserRef = ParserRef.from_target(node)
             else:
                 refs = ParserRef()
+            # This adds the node_block to self.results (a ParseResult
+            # object) as a ParsedNodePatch or ParsedMacroPatch
             self.parse_patch(node_block, refs)
         return test_blocks
 
     def get_unparsed_target(self) -> Iterable[NonSourceTarget]:
         path = self.yaml.path.original_file_path
 
-        for data in self.get_key_dicts():
+        # get verified list of dicts for the 'key' that this
+        # parser handles
+        key_dicts = self.get_key_dicts()
+        for data in key_dicts:
+            # add extra data to each dict
             data.update({
                 'original_file_path': path,
                 'yaml_key': self.key,
                 'package_name': self.project.project_name,
             })
             try:
-                model = self._target_type().from_dict(data)
+                # target_type: UnparsedNodeUpdate, UnparsedAnalysisUpdate,
+                # or UnparsedMacroUpdate
+                self._target_type().validate(data)
+                node = self._target_type().from_dict(data)
             except (ValidationError, JSONValidationException) as exc:
                 msg = error_context(path, self.key, data, exc)
                 raise CompilationException(msg) from exc
             else:
-                yield model
+                yield node
 
 
 class NodePatchParser(
@@ -861,7 +991,8 @@ class ExposureParser(YamlReader):
     def parse(self) -> Iterable[ParsedExposure]:
         for data in self.get_key_dicts():
             try:
-                unparsed = UnparsedExposure.from_dict(data)
+                UnparsedExposure.validate(data)
+                unparsed = UnparsedExposure.from_dict(data, validate=True)
             except (ValidationError, JSONValidationException) as exc:
                 msg = error_context(self.yaml.path, self.key, data, exc)
                 raise CompilationException(msg) from exc

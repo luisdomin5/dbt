@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import re
 
-from hologram import JsonSchemaMixin
+from dbt.dataclass_schema import JsonSchemaMixin
 from dbt.exceptions import RuntimeException
 
 from typing import Dict, ClassVar, Any, Optional

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from hologram import JsonSchemaMixin
+from dbt.dataclass_schema import JsonSchemaMixin
 from typing import List, Dict
 import pytest
 from dbt.contracts.graph.model_config import MergeBehavior, ShowBehavior, CompareBehavior

@@ -1,6 +1,6 @@
 # special support for CLI argument parsing.
 import itertools
-import yaml
+from dbt.clients.yaml_helper import yaml, Loader, Dumper  # noqa: F401
 
 from typing import (
     Dict, List, Optional, Tuple, Any, Union

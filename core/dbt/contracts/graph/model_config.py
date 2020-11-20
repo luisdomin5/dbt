@@ -6,14 +6,13 @@ from typing import (
     TypeVar, Callable, cast, Hashable
 )
 
-# TODO: patch+upgrade hologram to avoid this jsonschema import
+# TODO: patch+upgrade dbt.dataclass_schema to avoid this jsonschema import
 import jsonschema  # type: ignore
 
-# This is protected, but we really do want to reuse this logic, and the cache!
-# It would be nice to move the custom error picking stuff into hologram!
-from hologram import _validate_schema
-from hologram import JsonSchemaMixin, ValidationError
-from hologram.helpers import StrEnum, register_pattern
+from dbt.dataclass_schema import (
+    _validate_schema, JsonSchemaMixin, ValidationError,
+)
+from dbt.dataclass_schema.helpers import StrEnum, register_pattern
 
 from dbt.contracts.graph.unparsed import AdditionalPropertiesAllowed
 from dbt.exceptions import CompilationException, InternalException
@@ -361,9 +360,8 @@ class BaseConfig(
         return self.from_dict(dct, validate=validate)
 
     def finalize_and_validate(self: T) -> T:
-        # from_dict will validate for us
         dct = self.to_dict(omit_none=False, validate=False)
-        return self.from_dict(dct)
+        return self.from_dict(dct, validate=True)
 
     def replace(self, **kwargs):
         dct = self.to_dict(validate=False)
@@ -430,6 +428,8 @@ class NodeConfig(BaseConfig):
     )
     full_refresh: Optional[bool] = None
 
+    # This is internal validation, and it would be better to
+    # not have validate=True, but there's a test requiring it
     @classmethod
     def from_dict(cls, data, validate=True):
         for key in hooks.ModelHookType:
@@ -538,7 +538,7 @@ class SnapshotConfig(EmptySnapshotConfig):
         fields: List[Tuple[Field, str]] = []
         for old_field, name in super()._get_fields():
             new_field = old_field
-            # tell hologram we're really an initvar
+            # tell dbt.dataclass_schema we're really an initvar
             if old_field.metadata and old_field.metadata.get('init_required'):
                 new_field = field(init=True, metadata=old_field.metadata)
                 new_field.name = old_field.name
@@ -549,7 +549,8 @@ class SnapshotConfig(EmptySnapshotConfig):
 
     def finalize_and_validate(self: 'SnapshotConfig') -> SnapshotVariants:
         data = self.to_dict()
-        return SnapshotWrapper.from_dict({'config': data}).config
+        return SnapshotWrapper.from_dict(
+            {'config': data}, validate=True).config
 
 
 @dataclass(init=False)
@@ -564,7 +565,7 @@ class GenericSnapshotConfig(SnapshotConfig):
     def _collect_json_schema(
         cls, definitions: Dict[str, Any]
     ) -> Dict[str, Any]:
-        # this is the method you want to override in hologram if you want
+        # This is the method to override in dataclass_schema if you want
         # to do clever things about the json schema and have classes that
         # contain instances of your JsonSchemaMixin respect the change.
         schema = super()._collect_json_schema(definitions)
@@ -616,8 +617,8 @@ class CheckSnapshotConfig(SnapshotConfig):
     # ['email'] is valid under each of {'type': 'array', 'items':
     # {'type': 'string'}}, {'type': 'array', 'items': {'type': 'string'}}
     # but without it, parsing gets upset about values like `('email',)`
-    # maybe hologram itself should support this behavior? It's not like tuples
-    # are meaningful in json
+    # maybe dbt.dataclass_schema itself should support this behavior?
+    # It's not like tuples are meaningful in json
     check_cols: Union[All, List[str]] = field(
         init=False,
         metadata=dict(init_required=True),

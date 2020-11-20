@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple
 import os
 
-from hologram import ValidationError
+from dbt.dataclass_schema import ValidationError
 
 from dbt.clients.system import load_file_contents
 from dbt.clients.yaml_helper import load_yaml_text
@@ -75,7 +75,7 @@ def read_user_config(directory: str) -> UserConfig:
         if profile:
             user_cfg = coerce_dict_str(profile.get('config', {}))
             if user_cfg is not None:
-                return UserConfig.from_dict(user_cfg)
+                return UserConfig.from_dict(user_cfg, validate=True)
     except (RuntimeException, ValidationError):
         pass
     return UserConfig()
@@ -139,7 +139,8 @@ class Profile(HasCredentials):
             if self.credentials:
                 self.credentials.to_dict(validate=True)
             ProfileConfig.from_dict(
-                self.to_profile_info(serialize_credentials=True)
+                self.to_profile_info(serialize_credentials=True),
+                validate=True
             )
         except ValidationError as exc:
             raise DbtProfileError(validator_error_message(exc)) from exc
@@ -233,7 +234,7 @@ class Profile(HasCredentials):
         """
         if user_cfg is None:
             user_cfg = {}
-        config = UserConfig.from_dict(user_cfg)
+        config = UserConfig.from_dict(user_cfg, validate=True)
 
         profile = cls(
             profile_name=profile_name,

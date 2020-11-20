@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from hologram import JsonSchemaMixin
+from dbt.dataclass_schema import JsonSchemaMixin
 
 from typing import List, Dict, Any, Union
 

@@ -17,8 +17,8 @@ from dbt.logger import (
     GLOBAL_LOGGER as logger,
 )
 from dbt.utils import lowercase
-from hologram.helpers import StrEnum
-from hologram import JsonSchemaMixin
+from dbt.dataclass_schema.helpers import StrEnum
+from dbt.dataclass_schema import JsonSchemaMixin
 
 import agate
 

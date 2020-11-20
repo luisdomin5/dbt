@@ -3,7 +3,7 @@ from abc import abstractmethod
 from copy import deepcopy
 from typing import List, Optional, Type, TypeVar, Generic, Dict, Any
 
-from hologram import JsonSchemaMixin, ValidationError
+from dbt.dataclass_schema import JsonSchemaMixin, ValidationError
 
 from dbt.contracts.rpc import RPCParameters, RemoteResult, RemoteMethodFlags
 from dbt.exceptions import NotImplementedException, InternalException

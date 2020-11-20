@@ -13,7 +13,7 @@ from dbt.exceptions import (
 )
 from dbt.version import __version__
 from dbt.tracking import get_invocation_id
-from hologram import JsonSchemaMixin
+from dbt.dataclass_schema import JsonSchemaMixin
 
 MacroKey = Tuple[str, str]
 SourceKey = Tuple[str, str]

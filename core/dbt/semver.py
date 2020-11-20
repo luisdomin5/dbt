@@ -4,8 +4,8 @@ import re
 from dbt.exceptions import VersionsNotCompatibleException
 import dbt.utils
 
-from hologram import JsonSchemaMixin
-from hologram.helpers import StrEnum
+from dbt.dataclass_schema import JsonSchemaMixin
+from dbt.dataclass_schema.helpers import StrEnum
 from typing import Optional
 
 

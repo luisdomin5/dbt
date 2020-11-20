@@ -20,7 +20,7 @@ from dbt.parser.manifest import process_docs, process_sources, process_refs
 
 from dbt.node_types import NodeType
 from dbt.contracts.files import SourceFile, FileHash, FilePath
-from dbt.contracts.graph.manifest import Manifest
+from dbt.contracts.graph.manifest import Manifest, MacroManifest
 from dbt.contracts.graph.model_config import (
     NodeConfig, TestConfig, TimestampSnapshotConfig, SnapshotStrategy,
 )
@@ -126,8 +126,8 @@ class BaseParserTest(unittest.TestCase):
         self.parser_patcher = mock.patch('dbt.parser.base.get_adapter')
         self.factory_parser = self.parser_patcher.start()
 
-        self.macro_manifest = Manifest.from_macros(
-            macros={m.unique_id: m for m in generate_name_macros('root')}
+        self.macro_manifest = MacroManifest(
+            {m.unique_id: m for m in generate_name_macros('root')}, {}
         )
 
     def tearDown(self):
