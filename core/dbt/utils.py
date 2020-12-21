@@ -415,7 +415,7 @@ def restrict_to(*restrictions):
 def coerce_dict_str(value: Any) -> Optional[Dict[str, Any]]:
     """For annoying mypy reasons, this helper makes dealing with nested dicts
     easier. You get either `None` if it's not a Dict[str, Any], or the
-    Dict[str, Any] you expected (to pass it to JsonSchemaMixin.from_dict(...)).
+    Dict[str, Any] you expected (to pass it to dbtClassMixin.from_dict(...)).
     """
     if (isinstance(value, dict) and all(isinstance(k, str) for k in value)):
         return value

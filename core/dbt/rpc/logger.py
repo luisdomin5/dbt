@@ -1,8 +1,7 @@
 import logbook
 import logbook.queues
 from jsonrpc.exceptions import JSONRPCError
-from dbt.dataclass_schema import JsonSchemaMixin
-from dbt.dataclass_schema.helpers import StrEnum
+from dbt.dataclass_schema import dbtClassMixin, StrEnum
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -25,8 +24,9 @@ class QueueMessageType(StrEnum):
     terminating = frozenset((Error, Result, Timeout))
 
 
+# TODO: removed dbtClassMixin here... what does this need?
 @dataclass
-class QueueMessage(JsonSchemaMixin):
+class QueueMessage:
     message_type: QueueMessageType
 
 

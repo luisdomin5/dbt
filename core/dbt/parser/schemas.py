@@ -6,7 +6,7 @@ from typing import (
     Iterable, Dict, Any, Union, List, Optional, Generic, TypeVar, Type
 )
 
-from dbt.dataclass_schema import ValidationError, JsonSchemaMixin
+from dbt.dataclass_schema import ValidationError, dbtClassMixin
 
 from dbt.adapters.factory import get_adapter, get_adapter_package_names
 from dbt.clients.jinja import get_rendered, add_rendered_test_kwargs
@@ -685,6 +685,9 @@ class SchemaParser(SimpleParser[SchemaTestBlock, ParsedSchemaTestNode]):
 
             # parse exposures
             if 'exposures' in dct:
+                parser = TestablePatchParser(self, yaml_block, 'exposures')
+                for test_block in parser.parse():
+                    self.parse_tests(test_block)
                 self.parse_exposures(yaml_block)
 
 
@@ -759,7 +762,7 @@ class YamlDocsReader(YamlReader):
         raise NotImplementedError('parse is abstract')
 
 
-T = TypeVar('T', bound=JsonSchemaMixin)
+T = TypeVar('T', bound=dbtClassMixin)
 
 
 class SourceParser(YamlDocsReader):
@@ -868,7 +871,8 @@ class NonSourceParser(YamlDocsReader, Generic[NonSourceTarget, Parsed]):
         # parser handles
         key_dicts = self.get_key_dicts()
         for data in key_dicts:
-            # add extra data to each dict
+            # add extra data to each dict. This updates the dicts
+            # in the parser yaml
             data.update({
                 'original_file_path': path,
                 'yaml_key': self.key,

@@ -164,6 +164,24 @@ class ContractTestCase(TestCase):
             cls.from_dict(dct, validate=True)
 
 
+def compare_dicts(dict1, dict2):
+    first_set = set(dict1.keys())
+    second_set = set(dict2.keys())
+    print(f"--- Difference between first and second keys: {first_set.difference(second_set)}")
+    print(f"--- Difference between second and first keys: {second_set.difference(first_set)}")
+    common_keys = set(first_set).intersection(set(second_set))
+    found_differences = False
+    for key in common_keys:
+        if dict1[key] != dict2[key] :
+            print(f"--- --- first dict: {key}: {str(dict1[key])}")
+            print(f"--- --- second dict: {key}: {str(dict2[key])}")
+            found_differences = True
+    if found_differences:
+        print("--- Found differences in dictionaries")
+    else:
+        print("--- Found no differences in dictionaries")
+
+
 def assert_to_dict(obj, dct):
     assert obj.to_dict() == dct
 

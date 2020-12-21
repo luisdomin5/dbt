@@ -1153,7 +1153,7 @@ class DBTIntegrationTest(unittest.TestCase):
         self.assertEqual(*args, **kwargs)
 
     def assertBetween(self, timestr, start, end=None):
-        datefmt = '%Y-%m-%dT%H:%M:%S.%fZ'
+        datefmt = '%Y-%m-%dT%H:%M:%S.%f'
         if end is None:
             end = datetime.utcnow()
 

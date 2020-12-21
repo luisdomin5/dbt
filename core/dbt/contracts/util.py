@@ -13,7 +13,7 @@ from dbt.exceptions import (
 )
 from dbt.version import __version__
 from dbt.tracking import get_invocation_id
-from dbt.dataclass_schema import JsonSchemaMixin
+from dbt.dataclass_schema import dbtClassMixin
 
 MacroKey = Tuple[str, str]
 SourceKey = Tuple[str, str]
@@ -69,22 +69,38 @@ class AdditionalPropertiesMixin:
     """
     ADDITIONAL_PROPERTIES = True
 
+    # This takes attributes in the dictionary that are
+    # not in the class definitions and puts them in an
+    # _extra dict in the class
     @classmethod
-    def from_dict(cls, data, validate=True):
-        self = super().from_dict(data=data, validate=validate)
-        keys = self.to_dict(validate=False, omit_none=False)
+    def before_from_dict(cls, data):
+        # dir() did not work because fields with
+        # metadata settings are not found
+        # The original version of this would create the
+        # object first and then update extra with the
+        # extra keys, but that won't work here, so
+        # we're copying the dict so we don't insert the
+        # _extra in the original data
+        cls_keys = cls._get_field_names()
+        new_dict = {}
         for key, value in data.items():
-            if key not in keys:
-                self.extra[key] = value
-        return self
+            if key not in cls_keys:
+                if '_extra' not in new_dict:
+                    new_dict['_extra'] = {}
+                new_dict['_extra'][key] = value
+            else:
+                new_dict[key] = value
+        data = new_dict
+        data = super().before_from_dict(data)
+        return data
 
-    def to_dict(self, omit_none=True, validate=False):
-        data = super().to_dict(omit_none=omit_none, validate=validate)
+    def after_to_dict(self, dct, omit_none=True):
+        data = super().after_to_dict(dct, omit_none)
         data.update(self.extra)
         return data
 
     def replace(self, **kwargs):
-        dct = self.to_dict(omit_none=False, validate=False)
+        dct = self.to_dict(omit_none=False)
         dct.update(kwargs)
         return self.from_dict(dct)
 
@@ -135,7 +151,7 @@ def get_metadata_env() -> Dict[str, str]:
 
 
 @dataclasses.dataclass
-class BaseArtifactMetadata(JsonSchemaMixin):
+class BaseArtifactMetadata(dbtClassMixin):
     dbt_schema_version: str
     dbt_version: str = __version__
     generated_at: datetime = dataclasses.field(
@@ -158,7 +174,7 @@ def schema_version(name: str, version: int):
 
 
 @dataclasses.dataclass
-class VersionedSchema(JsonSchemaMixin):
+class VersionedSchema(dbtClassMixin):
     dbt_schema_version: ClassVar[SchemaVersion]
 
     @classmethod
@@ -179,6 +195,8 @@ T = TypeVar('T', bound='ArtifactMixin')
 class ArtifactMixin(VersionedSchema, Writable, Readable):
     metadata: BaseArtifactMetadata
 
+    # This won't be called for nested classes.
+    # Is there a better place to validate the schema_version?
     @classmethod
     def from_dict(
         cls: Type[T], data: Dict[str, Any], validate: bool = True

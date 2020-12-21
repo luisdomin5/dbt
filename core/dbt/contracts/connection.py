@@ -6,24 +6,25 @@ from typing import (
 )
 from typing_extensions import Protocol
 
-from dbt.dataclass_schema import JsonSchemaMixin
-from dbt.dataclass_schema.helpers import (
-    StrEnum, register_pattern, ExtensibleJsonSchemaMixin
+from dbt.dataclass_schema import (
+    dbtClassMixin, StrEnum, ExtensibleDbtClassMixin
 )
 
 from dbt.contracts.util import Replaceable
 from dbt.exceptions import InternalException
 from dbt.utils import translate_aliases
+from dbt.dataclass_schema import dbtClassMixin, ValidatedStringMixin
+from mashumaro.types import SerializableType
 
 from dbt.logger import GLOBAL_LOGGER as logger
 
 
-Identifier = NewType('Identifier', str)
-register_pattern(Identifier, r'^[A-Za-z_][A-Za-z0-9_]+$')
+class Identifier(ValidatedStringMixin):
+    ValidationRegex = r'^[A-Za-z_][A-Za-z0-9_]+$'
 
 
 @dataclass
-class AdapterResponse(JsonSchemaMixin):
+class AdapterResponse(dbtClassMixin):
     _message: str
     code: Optional[str] = None
     rows_affected: Optional[int] = None
@@ -40,20 +41,19 @@ class ConnectionState(StrEnum):
 
 
 @dataclass(init=False)
-class Connection(ExtensibleJsonSchemaMixin, Replaceable):
+class Connection(ExtensibleDbtClassMixin, Replaceable):
     type: Identifier
-    name: Optional[str]
+    name: Optional[str] = None
     state: ConnectionState = ConnectionState.INIT
     transaction_open: bool = False
-    # prevent serialization
     _handle: Optional[Any] = None
-    _credentials: JsonSchemaMixin = field(init=False)
+    _credentials: Optional[dbtClassMixin] = None
 
     def __init__(
         self,
         type: Identifier,
         name: Optional[str],
-        credentials: JsonSchemaMixin,
+        credentials: dbtClassMixin,
         state: ConnectionState = ConnectionState.INIT,
         transaction_open: bool = False,
         handle: Optional[Any] = None,
@@ -113,7 +113,7 @@ class LazyHandle:
 # will work.
 @dataclass  # type: ignore
 class Credentials(
-    ExtensibleJsonSchemaMixin,
+    ExtensibleDbtClassMixin,
     Replaceable,
     metaclass=abc.ABCMeta
 ):
@@ -132,7 +132,7 @@ class Credentials(
     ) -> Iterable[Tuple[str, Any]]:
         """Return an ordered iterator of key/value pairs for pretty-printing.
         """
-        as_dict = self.to_dict(omit_none=False, with_aliases=with_aliases)
+        as_dict = self.to_dict(omit_none=False)
         connection_keys = set(self._connection_keys())
         aliases: List[str] = []
         if with_aliases:
@@ -148,9 +148,10 @@ class Credentials(
         raise NotImplementedError
 
     @classmethod
-    def from_dict(cls, data):
+    def before_from_dict(cls, data):
+        data = super().before_from_dict(data)
         data = cls.translate_aliases(data)
-        return super().from_dict(data, validate=True)
+        return data
 
     @classmethod
     def translate_aliases(
@@ -158,29 +159,25 @@ class Credentials(
     ) -> Dict[str, Any]:
         return translate_aliases(kwargs, cls._ALIASES, recurse)
 
-    def to_dict(self, omit_none=True, validate=False, *, with_aliases=False):
-        serialized = super().to_dict(omit_none=omit_none, validate=validate)
-        if with_aliases:
-            serialized.update({
-                new_name: serialized[canonical_name]
+
+    def after_to_dict(self, dct, omit_none):
+        # no super() -- do we need it?
+        if self._ALIASES:
+            dct.update({
+                new_name: dct[canonical_name]
                 for new_name, canonical_name in self._ALIASES.items()
-                if canonical_name in serialized
+                if canonical_name in dct
             })
-        return serialized
+        return dct
 
 
 class UserConfigContract(Protocol):
     send_anonymous_usage_stats: bool
-    use_colors: Optional[bool]
-    partial_parse: Optional[bool]
-    printer_width: Optional[int]
+    use_colors: Optional[bool] = None
+    partial_parse: Optional[bool] = None
+    printer_width: Optional[int] = None
 
     def set_values(self, cookie_dir: str) -> None:
-        ...
-
-    def to_dict(
-        self, omit_none: bool = True, validate: bool = False
-    ) -> Dict[str, Any]:
         ...
 
 
@@ -216,7 +213,7 @@ DEFAULT_QUERY_COMMENT = '''
 
 
 @dataclass
-class QueryComment(JsonSchemaMixin):
+class QueryComment(dbtClassMixin):
     comment: str = DEFAULT_QUERY_COMMENT
     append: bool = False
 

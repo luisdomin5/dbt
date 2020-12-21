@@ -70,9 +70,9 @@ setup(
         'json-rpc>=1.12,<2',
         'werkzeug>=0.15,<0.17',
         'dataclasses==0.6;python_version<"3.7"',
-        'hologram==0.0.12',
         'logbook>=1.5,<1.6',
         'typing-extensions>=3.7.4,<3.8',
+        'jsonschema',
         # the following are all to match snowflake-connector-python
         'requests>=2.18.0,<2.24.0',
         'idna<2.10',

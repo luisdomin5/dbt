@@ -55,6 +55,7 @@ class ManifestContext(ConfiguredContext):
             None,
         )
 
+    # TODO: Converting this to after_to_dict broke a bunch of adapter tests
     def to_dict(self):
         dct = super().to_dict()
         # This moves all of the macros in the 'namespace' into top level

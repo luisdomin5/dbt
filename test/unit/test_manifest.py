@@ -221,7 +221,7 @@ class ManifestTest(unittest.TestCase):
     def tearDown(self):
         del os.environ['DBT_ENV_CUSTOM_ENV_key']
 
-    @freezegun.freeze_time('2018-02-14T09:15:13Z')
+    @freezegun.freeze_time('2018-02-14T09:15:13')
     def test__no_nodes(self):
         manifest = Manifest(
             nodes={}, sources={}, macros={}, docs={}, disabled=[], files={},
@@ -239,7 +239,7 @@ class ManifestTest(unittest.TestCase):
                 'parent_map': {},
                 'child_map': {},
                 'metadata': {
-                    'generated_at': '2018-02-14T09:15:13Z',
+                    'generated_at': '2018-02-14T09:15:13',
                     'dbt_schema_version': 'https://schemas.getdbt.com/dbt/manifest/v1.json',
                     'dbt_version': dbt.version.__version__,
                     'env': {ENV_KEY_NAME: 'value'},
@@ -250,7 +250,7 @@ class ManifestTest(unittest.TestCase):
             }
         )
 
-    @freezegun.freeze_time('2018-02-14T09:15:13Z')
+    @freezegun.freeze_time('2018-02-14T09:15:13')
     def test__nested_nodes(self):
         nodes = copy.copy(self.nested_nodes)
         manifest = Manifest(
@@ -259,7 +259,7 @@ class ManifestTest(unittest.TestCase):
             metadata=ManifestMetadata(generated_at=datetime.utcnow()),
         )
         serialized = manifest.writable_manifest().to_dict()
-        self.assertEqual(serialized['metadata']['generated_at'], '2018-02-14T09:15:13Z')
+        self.assertEqual(serialized['metadata']['generated_at'], '2018-02-14T09:15:13')
         self.assertEqual(serialized['docs'], {})
         self.assertEqual(serialized['disabled'], [])
         parent_map = serialized['parent_map']
@@ -356,7 +356,7 @@ class ManifestTest(unittest.TestCase):
         )
 
     @mock.patch.object(tracking, 'active_user')
-    @freezegun.freeze_time('2018-02-14T09:15:13Z')
+    @freezegun.freeze_time('2018-02-14T09:15:13')
     def test_no_nodes_with_metadata(self, mock_user):
         mock_user.id = 'cfc9500f-dc7f-4c83-9ea7-2c581c1b38cf'
         mock_user.invocation_id = '01234567-0123-0123-0123-0123456789ab'
@@ -382,7 +382,7 @@ class ManifestTest(unittest.TestCase):
                 'child_map': {},
                 'docs': {},
                 'metadata': {
-                    'generated_at': '2018-02-14T09:15:13Z',
+                    'generated_at': '2018-02-14T09:15:13',
                     'dbt_schema_version': 'https://schemas.getdbt.com/dbt/manifest/v1.json',
                     'dbt_version': dbt.version.__version__,
                     'project_id': '098f6bcd4621d373cade4e832627b4f6',
@@ -606,7 +606,7 @@ class MixedManifestTest(unittest.TestCase):
     def tearDown(self):
         del os.environ['DBT_ENV_CUSTOM_ENV_key']
 
-    @freezegun.freeze_time('2018-02-14T09:15:13Z')
+    @freezegun.freeze_time('2018-02-14T09:15:13')
     def test__no_nodes(self):
         metadata = ManifestMetadata(generated_at=datetime.utcnow(), invocation_id='01234567-0123-0123-0123-0123456789ab')
         manifest = Manifest(nodes={}, sources={}, macros={}, docs={}, selectors={},
@@ -622,7 +622,7 @@ class MixedManifestTest(unittest.TestCase):
                 'parent_map': {},
                 'child_map': {},
                 'metadata': {
-                    'generated_at': '2018-02-14T09:15:13Z',
+                    'generated_at': '2018-02-14T09:15:13',
                     'dbt_schema_version': 'https://schemas.getdbt.com/dbt/manifest/v1.json',
                     'dbt_version': dbt.version.__version__,
                     'invocation_id': '01234567-0123-0123-0123-0123456789ab',
@@ -633,7 +633,7 @@ class MixedManifestTest(unittest.TestCase):
             }
         )
 
-    @freezegun.freeze_time('2018-02-14T09:15:13Z')
+    @freezegun.freeze_time('2018-02-14T09:15:13')
     def test__nested_nodes(self):
         nodes = copy.copy(self.nested_nodes)
         manifest = Manifest(nodes=nodes, sources={}, macros={}, docs={},
@@ -641,7 +641,7 @@ class MixedManifestTest(unittest.TestCase):
                             metadata=ManifestMetadata(generated_at=datetime.utcnow()),
                             files={}, exposures={})
         serialized = manifest.writable_manifest().to_dict()
-        self.assertEqual(serialized['metadata']['generated_at'], '2018-02-14T09:15:13Z')
+        self.assertEqual(serialized['metadata']['generated_at'], '2018-02-14T09:15:13')
         self.assertEqual(serialized['disabled'], [])
         parent_map = serialized['parent_map']
         child_map = serialized['child_map']

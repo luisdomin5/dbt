@@ -19,19 +19,19 @@ from dbt.contracts.graph.parsed import (
 from dbt.node_types import NodeType
 from dbt.contracts.util import Replaceable
 
-from dbt.dataclass_schema import JsonSchemaMixin
+from dbt.dataclass_schema import dbtClassMixin
 from dataclasses import dataclass, field
 from typing import Optional, List, Union, Dict, Type
 
 
 @dataclass
-class InjectedCTE(JsonSchemaMixin, Replaceable):
+class InjectedCTE(dbtClassMixin, Replaceable):
     id: str
     sql: str
 
 
 @dataclass
-class CompiledNodeMixin(JsonSchemaMixin):
+class CompiledNodeMixin(dbtClassMixin):
     # this is a special mixin class to provide a required argument. If a node
     # is missing a `compiled` flag entirely, it must not be a CompiledNode.
     compiled: bool

@@ -751,9 +751,9 @@ class Manifest(MacroMethods):
             parent_map=backward_edges,
         )
 
-    def to_dict(self, omit_none=True, validate=False):
+    def to_dict(self, omit_none=True):
         return self.writable_manifest().to_dict(
-            omit_none=omit_none, validate=validate
+            omit_none=omit_none
         )
 
     def write(self, path):

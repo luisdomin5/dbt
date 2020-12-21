@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Any, Set, Union
-from dbt.dataclass_schema import JsonSchemaMixin, ValidationError
+from dbt.dataclass_schema import dbtClassMixin, ValidationError
 
 import dbt.deprecations
 import dbt.exceptions
@@ -47,7 +47,7 @@ def sql_escape(string):
 
 
 @dataclass
-class PartitionConfig(JsonSchemaMixin):
+class PartitionConfig(dbtClassMixin):
     field: str
     data_type: str = 'date'
     granularity: str = 'day'
@@ -84,7 +84,7 @@ class PartitionConfig(JsonSchemaMixin):
 
 
 @dataclass
-class GrantTarget(JsonSchemaMixin):
+class GrantTarget(dbtClassMixin):
     dataset: str
     project: str
 

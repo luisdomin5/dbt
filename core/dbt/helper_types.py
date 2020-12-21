@@ -2,14 +2,27 @@
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
-from typing import NewType, Tuple, AbstractSet
+from typing import NewType, Tuple, AbstractSet, Union
 
 from dbt.dataclass_schema import (
-    FieldEncoder, JsonSchemaMixin, JsonDict, ValidationError
+    dbtClassMixin, JsonDict, ValidationError, FieldEncoder,
+    StrEnum,
 )
-from dbt.dataclass_schema.helpers import StrEnum
+from mashumaro.types import SerializableType
 
-Port = NewType('Port', int)
+
+class Port(int, SerializableType):
+    @classmethod
+    def _deserialize(cls, value: Union[int, str]) -> 'Port':
+        try:                                       
+            value = int(value)
+        except ValueError:
+            raise ValidationError(f'Cannot encode {value} into port numbr')
+
+        return Port(value)
+
+    def _serialize(self) -> int:
+        return self
 
 
 class PortEncoder(FieldEncoder):
@@ -66,16 +79,17 @@ class NVEnum(StrEnum):
 
 
 @dataclass
-class NoValue(JsonSchemaMixin):
+class NoValue(dbtClassMixin):
     """Sometimes, you want a way to say none that isn't None"""
     novalue: NVEnum = NVEnum.novalue
 
 
-JsonSchemaMixin.register_field_encoders({
+dbtClassMixin.register_field_encoders({
     Port: PortEncoder(),
     timedelta: TimeDeltaFieldEncoder(),
     Path: PathEncoder(),
 })
+
 
 
 FQNPath = Tuple[str, ...]

@@ -33,7 +33,9 @@ from dbt.contracts.project import (
 )
 from dbt.contracts.project import PackageConfig
 
-from dbt.dataclass_schema import ValidationError
+from dbt.dataclass_schema import (
+    ValidationError, HyphenatedDbtClassMixin
+)
 
 from .renderer import DbtProjectYamlRenderer
 from .selectors import (
@@ -306,8 +308,10 @@ class PartialProject(RenderComponents):
         )
 
         try:
+            # TODO  this isn't working with validate=True
             cfg = ProjectContract.from_dict(
-                rendered.project_dict, validate=True
+                rendered.project_dict,
+                validate=True
             )
         except ValidationError as e:
             raise DbtProjectError(validator_error_message(e)) from e

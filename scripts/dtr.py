@@ -83,7 +83,7 @@ def parse_args(argv):
     )
 
     parser.add_argument('-v', '--python-version',
-                        default='36', choices=['27', '36', '37', '38'],
+                        default='38', choices=['27', '36', '37', '38'],
                         help='what python version to run')
     parser.add_argument(
         '-t', '--types',

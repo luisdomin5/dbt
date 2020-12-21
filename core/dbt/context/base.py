@@ -173,6 +173,7 @@ class BaseContext(metaclass=ContextMeta):
             builtins[key] = value
         return builtins
 
+    # no dbtClassMixin so this is not an actual override
     def to_dict(self):
         self._ctx['context'] = self._ctx
         builtins = self.generate_builtins()

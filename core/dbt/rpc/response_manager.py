@@ -1,7 +1,7 @@
 import json
 from typing import Callable, Dict, Any
 
-from dbt.dataclass_schema import JsonSchemaMixin
+from dbt.dataclass_schema import dbtClassMixin
 from jsonrpc.exceptions import (
     JSONRPCParseError,
     JSONRPCInvalidRequestException,
@@ -90,10 +90,10 @@ class ResponseManager(JSONRPCResponseManager):
     @classmethod
     def _get_responses(cls, requests, dispatcher):
         for output in super()._get_responses(requests, dispatcher):
-            # if it's a result, check if it's a JsonSchemaMixin and if so call
+            # if it's a result, check if it's a dbtClassMixin and if so call
             # to_dict
             if hasattr(output, 'result'):
-                if isinstance(output.result, JsonSchemaMixin):
+                if isinstance(output.result, dbtClassMixin):
                     output.result = output.result.to_dict(omit_none=False)
             yield output
 

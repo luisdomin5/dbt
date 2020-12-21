@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple
 import os
 
-from dbt.dataclass_schema import ValidationError
+from dbt.dataclass_schema import ValidationError, MissingField
 
 from dbt.clients.system import load_file_contents
 from dbt.clients.yaml_helper import load_yaml_text
@@ -137,7 +137,7 @@ class Profile(HasCredentials):
     def validate(self):
         try:
             if self.credentials:
-                self.credentials.to_dict(validate=True)
+                self.credentials.to_dict()
             ProfileConfig.from_dict(
                 self.to_profile_info(serialize_credentials=True),
                 validate=True
@@ -161,7 +161,8 @@ class Profile(HasCredentials):
         typename = profile.pop('type')
         try:
             cls = load_plugin(typename)
-            credentials = cls.from_dict(profile)
+            data = cls.translate_aliases(profile)
+            credentials = cls.from_dict(data)
         except (RuntimeException, ValidationError) as e:
             msg = str(e) if isinstance(e, RuntimeException) else e.message
             raise DbtProfileError(
