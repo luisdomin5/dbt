@@ -238,8 +238,8 @@ class HasRPCServer(DBTIntegrationTest):
             self.assertEqual(timing['name'], expected_name)
             self.assertIn('started_at', timing)
             self.assertIn('completed_at', timing)
-            datetime.strptime(timing['started_at'], '%Y-%m-%dT%H:%M:%S.%fZ')
-            datetime.strptime(timing['completed_at'], '%Y-%m-%dT%H:%M:%S.%fZ')
+            datetime.strptime(timing['started_at'], '%Y-%m-%dT%H:%M:%S.%f')
+            datetime.strptime(timing['completed_at'], '%Y-%m-%dT%H:%M:%S.%f')
 
     def assertIsResult(self, data, id_=1):
         self.assertEqual(data['id'], id_)
