@@ -851,7 +851,7 @@ class dbtClassMixin(DataClassDictMixin):
 
 
 class ValidatedStringMixin(str, SerializableType):
-    ValidationRegex = None
+    ValidationRegex = ''
 
     @classmethod
     def _deserialize(cls, value: str) -> 'ValidatedStringMixin':
@@ -862,7 +862,7 @@ class ValidatedStringMixin(str, SerializableType):
         return str(self)
 
     @classmethod
-    def validate(cls, value) -> str:
+    def validate(cls, value):
         res = re.match(cls.ValidationRegex, value)
 
         if res is None:

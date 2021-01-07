@@ -110,7 +110,7 @@ class Path(FakeAPIObject):
             part = part.lower()
         return part
 
-    def get_part(self, key: ComponentName) -> str:
+    def get_part(self, key: ComponentName) -> Optional[str]:
         if key == ComponentName.Database:
             return self.database
         elif key == ComponentName.Schema:

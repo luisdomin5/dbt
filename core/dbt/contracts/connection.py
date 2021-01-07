@@ -12,7 +12,7 @@ from dbt.dataclass_schema import (
     dbtClassMixin, StrEnum, ExtensibleDbtClassMixin,
     ValidatedStringMixin
 )
-from.dbt.contracts.util import Replaceable
+from dbt.contracts.util import Replaceable
 
 
 class Identifier(ValidatedStringMixin):

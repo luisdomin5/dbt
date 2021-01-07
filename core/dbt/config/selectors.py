@@ -67,7 +67,7 @@ class SelectorConfig(Dict[str, SelectionSpec]):
                 f'Could not render selector data: {exc}',
                 result_type='invalid_selector',
             ) from exc
-        return cls.from_dict(rendered)
+        return cls.selectors_from_dict(rendered)
 
     @classmethod
     def from_path(
