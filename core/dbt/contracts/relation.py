@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from typing import (
-    Optional, Generic, Dict,
+    Optional, Dict,
 )
 from typing_extensions import Protocol
 

@@ -1,7 +1,7 @@
 import logbook
 import logbook.queues
 from jsonrpc.exceptions import JSONRPCError
-from dbt.dataclass_schema import dbtClassMixin, StrEnum
+from dbt.dataclass_schema import StrEnum
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta

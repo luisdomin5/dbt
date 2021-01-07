@@ -18,7 +18,6 @@ import jsonschema  # type: ignore
 
 from mashumaro import DataClassDictMixin
 from mashumaro.types import SerializableType
-from mashumaro.exceptions import MissingField
 
 JSON_ENCODABLE_TYPES = {
     str: {"type": "string"},
@@ -107,6 +106,7 @@ class FieldEncoder(Generic[TV]):
     def json_schema(self) -> JsonDict:
         raise NotImplementedError()
 
+
 class DateTimeFieldEncoder(FieldEncoder[datetime]):
     """Encodes datetimes to RFC3339 format"""
 
@@ -144,6 +144,7 @@ class UuidField(FieldEncoder[UUID]):
                 "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
             ),
         }
+
 
 T = TypeVar("T", bound="dbtClassMixin")
 
@@ -294,14 +295,13 @@ class dbtClassMixin(DataClassDictMixin):
     # This will only be called by the current class, not any
     # nested classes. The only thing it does right now
     # is wrap exceptions
-    def to_dict( self, omit_none: bool = True):
+    def to_dict(self, omit_none: bool = True):
         try:
             dct = self._to_dict(omit_none=omit_none)
         except Exception as exc:
             msg = f"{type(self).__name__}: {str(exc)}"
             raise ValidationError(msg)
         return dct
-
 
     # This is called by the mashumaro to_dict in order to handle
     # nested classes.
@@ -361,8 +361,7 @@ class dbtClassMixin(DataClassDictMixin):
     @classmethod
     def field_mapping(cls) -> Dict[str, str]:
         """Defines the mapping of python field names to JSON field names.
-
-        The main use-case is to allow JSON field names which are Python keywords
+        The main use-case is allwing JSON field names which are Python keywords
         """
         return {}
 
@@ -406,8 +405,6 @@ class dbtClassMixin(DataClassDictMixin):
         for element in fields:
             field_names.append(element[1])
         return field_names
-
-
 
     @classmethod
     def _get_field_meta(cls, field: Field) -> Tuple[FieldMeta, bool]:
@@ -869,7 +866,8 @@ class ValidatedStringMixin(str, SerializableType):
         res = re.match(cls.ValidationRegex, value)
 
         if res is None:
-            raise ValidationError(f"Invalid value: {value}") # TODO
+            raise ValidationError(f"Invalid value: {value}")  # TODO
+
 
 # These classes must be in this order or it doesn't work
 class StrEnum(str, SerializableType, Enum):
@@ -909,6 +907,7 @@ class HyphenatedDbtClassMixin(dbtClassMixin):
 class ExtensibleDbtClassMixin(dbtClassMixin):
     ADDITIONAL_PROPERTIES = True
 
+
 def register_pattern(base_type: Type, pattern: str) -> None:
     """base_type should be a typing.NewType that should always have the given
     regex pattern. That means that its underlying type ('__supertype__') had
@@ -921,6 +920,3 @@ def register_pattern(base_type: Type, pattern: str) -> None:
             return {"type": "string", "pattern": pattern}
 
     dbtClassMixin.register_field_encoders({base_type: PatternEncoder()})
-
-
-

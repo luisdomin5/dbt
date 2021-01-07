@@ -2,19 +2,12 @@ from dataclasses import field, Field, dataclass
 from enum import Enum
 from itertools import chain
 from typing import (
-    Any, List, Optional, Dict, MutableMapping, Union, Type, NewType, Tuple,
-    TypeVar, Callable, cast, Hashable
+    Any, List, Optional, Dict, MutableMapping, Union, Type,
+    TypeVar, Callable,
 )
-
-# TODO: patch+upgrade dbt.dataclass_schema to avoid this jsonschema import
-import jsonschema  # type: ignore
-
 from dbt.dataclass_schema import (
-    _validate_schema, dbtClassMixin, ValidationError, StrEnum,
-    register_pattern,
+    dbtClassMixin, ValidationError, StrEnum, register_pattern,
 )
-from mashumaro.types import SerializableType
-
 from dbt.contracts.graph.unparsed import AdditionalPropertiesAllowed
 from dbt.exceptions import CompilationException, InternalException
 from dbt.contracts.util import Replaceable, list_str
@@ -170,14 +163,11 @@ def insensitive_patterns(*patterns: str):
     return '^({})$'.format('|'.join(lowercased))
 
 
-
 class Severity(str):
     pass
 
 
-
 register_pattern(Severity, insensitive_patterns('warn', 'error'))
-
 
 
 class All(StrEnum):
@@ -470,12 +460,15 @@ class SnapshotConfig(EmptySnapshotConfig):
         super().validate(data)
         if data.get('strategy') == 'check':
             if not data.get('check_cols'):
-                raise ValidationError("A 'check' snapshot must have 'check_cols'")
+                raise ValidationError(
+                    "A 'check' snapshot must have 'check_cols'")
         elif data.get('strategy') == 'timestamp':
             if not data.get('updated_at'):
-                raise ValidationError("A 'timestamp' snapshot must have 'updated_at'")
+                raise ValidationError(
+                    "A 'timestamp' snapshot must have 'updated_at'")
             if data.get('check_cols'):
-                raise ValidationError("A 'timestamp' snapshot should not have 'check_cols'")
+                raise ValidationError(
+                    "A 'timestamp' snapshot should not have 'check_cols'")
         # If the strategy is not 'check' or 'timestamp' it's a custom strategy,
         # formerly supported with GenericSnapshotConfig
 
@@ -483,7 +476,6 @@ class SnapshotConfig(EmptySnapshotConfig):
         data = self.to_dict()
         self.validate(data)
         return self.from_dict(data)
-
 
 
 RESOURCE_TYPES: Dict[NodeType, Type[BaseConfig]] = {

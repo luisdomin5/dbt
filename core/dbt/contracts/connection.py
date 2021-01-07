@@ -2,21 +2,17 @@ import abc
 import itertools
 from dataclasses import dataclass, field
 from typing import (
-    Any, ClassVar, Dict, Tuple, Iterable, Optional, NewType, List, Callable,
+    Any, ClassVar, Dict, Tuple, Iterable, Optional, List, Callable,
 )
-from typing_extensions import Protocol
-
-from dbt.dataclass_schema import (
-    dbtClassMixin, StrEnum, ExtensibleDbtClassMixin
-)
-
-from dbt.contracts.util import Replaceable
 from dbt.exceptions import InternalException
 from dbt.utils import translate_aliases
-from dbt.dataclass_schema import dbtClassMixin, ValidatedStringMixin
-from mashumaro.types import SerializableType
-
 from dbt.logger import GLOBAL_LOGGER as logger
+from typing_extensions import Protocol
+from dbt.dataclass_schema import (
+    dbtClassMixin, StrEnum, ExtensibleDbtClassMixin,
+    ValidatedStringMixin
+)
+from.dbt.contracts.util import Replaceable
 
 
 class Identifier(ValidatedStringMixin):
@@ -158,7 +154,6 @@ class Credentials(
         cls, kwargs: Dict[str, Any], recurse: bool = False
     ) -> Dict[str, Any]:
         return translate_aliases(kwargs, cls._ALIASES, recurse)
-
 
     def after_to_dict(self, dct, omit_none):
         # no super() -- do we need it?

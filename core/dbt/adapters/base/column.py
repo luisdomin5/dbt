@@ -1,10 +1,8 @@
 from dataclasses import dataclass
 import re
-
-from dbt.dataclass_schema import dbtClassMixin
-from dbt.exceptions import RuntimeException
-
 from typing import Dict, ClassVar, Any, Optional
+
+from dbt.exceptions import RuntimeException
 
 
 # TODO: does this need dbtClassMixin?

@@ -4,17 +4,14 @@ from dbt.helper_types import NoValue
 from dbt.logger import GLOBAL_LOGGER as logger  # noqa
 from dbt import tracking
 from dbt import ui
-
 from dbt.dataclass_schema import (
     dbtClassMixin, ValidationError,
     HyphenatedDbtClassMixin,
     ExtensibleDbtClassMixin,
-    register_pattern
+    register_pattern, ValidatedStringMixin
 )
-
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Union, Any, NewType
-from dbt.dataclass_schema import dbtClassMixin, ValidatedStringMixin
+from typing import Optional, List, Dict, Union, Any
 from mashumaro.types import SerializableType
 
 PIN_PACKAGE_URL = 'https://docs.getdbt.com/docs/package-management#section-specifying-package-versions'  # noqa
@@ -44,7 +41,6 @@ register_pattern(
     SemverString,
     r'^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(\.(?:0|[1-9]\d*))?$',
 )
-
 
 
 @dataclass

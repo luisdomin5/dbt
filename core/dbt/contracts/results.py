@@ -20,7 +20,6 @@ from dbt.utils import lowercase
 from dbt.dataclass_schema import dbtClassMixin, StrEnum
 
 import agate
-from mashumaro.types import SerializableType
 
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -109,7 +108,7 @@ class NodeResult(BaseResult):
 
 
 # TODO : Does this work? no-op agate table serialization in RunModelResult
-#class SerializableAgateTable(agate.Table, SerializableType):
+# class SerializableAgateTable(agate.Table, SerializableType):
 #    def _serialize(self) -> str:
 #        return 'no agate table'
 

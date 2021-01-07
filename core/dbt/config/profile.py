@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple
 import os
 
-from dbt.dataclass_schema import ValidationError, MissingField
+from dbt.dataclass_schema import ValidationError
 
 from dbt.clients.system import load_file_contents
 from dbt.clients.yaml_helper import load_yaml_text

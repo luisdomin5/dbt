@@ -105,8 +105,6 @@ class HasRelationMetadata(dbtClassMixin, Replaceable):
         return data
 
 
-
-
 class ParsedNodeMixins(dbtClassMixin):
     resource_type: NodeType
     depends_on: DependsOn
